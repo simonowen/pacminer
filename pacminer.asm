@@ -379,8 +379,7 @@ no_shift:      ld  a,&ef
                jr  z,not_67890
                rra
                jr  nc,not_0
-               res 5,d              ; 0 = coin 1
-               res 5,e              ; 0 = start 1
+               res 2,e              ; 0 = right 2 (jump)
 not_0:         rra
                jr  nc,not_9
                res 0,d              ; 9 = up
@@ -403,7 +402,10 @@ read_qaop:     ld  a,&fb
 not_q:
                ld  a,&fd
                in  a,(keyboard)
-               rra
+               bit 3,a
+               jr  nz,not_f
+               res 3,e              ; F = down 2 (toggle FX)
+not_f:         rra
                jr  c,not_a
                res 3,d              ; A = down
 not_a:
@@ -420,9 +422,14 @@ not_o:
                in  a,(keyboard)
                rra
                jr  c,not_space
-               res 5,d              ; space = coin 1
-               res 5,e              ; space = start 1
-not_space:
+               res 2,e              ; space = right 2 (jump)
+not_space:     rra
+               jr  c,not_sym
+               res 2,e              ; sym = right 2 (jump)
+not_sym:       rra
+               jr  c,not_m
+               res 0,e              ; M = up 2 (toggle music)
+not_m:
 
 ; Kempston joystick
 read_joy:      in  a,(kempston)     ; read Kempston joystick
@@ -444,8 +451,7 @@ not_down:      rra
                res 0,d              ; up
 not_up:        rra
                jr  nc,not_fire
-               res 5,d              ; Fire = coin 1
-               res 5,e              ; Fire = start 1
+               res 2,e              ; fire = right 2 (jump)
 not_fire:
 
                ld  a,d              ; dip including controls
