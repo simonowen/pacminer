@@ -3,7 +3,6 @@
 ; http://simonowen.com/spectrum/pacemuzx/
 
 debug:         equ 0                ; non-zero for border stripes showing CPU use
-colour:        equ 1                ; non-zero for switchable colour/mono, zero for mono-only
 
 ; Memory maps
 ;
@@ -33,7 +32,7 @@ colour:        equ 1                ; non-zero for switchable colour/mono, zero 
 ; db00-dbef - screen data behind sprites (alt)
 ; dbf0-ffff - pre-rotated tile graphics
 
-default_attr:  equ &07              ; default = white on black
+screen_attr:   equ &07              ; white on black
 
 kempston:      equ 31               ; Kempston joystick in bits 4-0
 divide:        equ 227              ; DivIDE interface
@@ -406,16 +405,6 @@ flash_maze:    ld  a,(&4440)        ; attribute of maze top-right
                xor %01000000        ; toggle bright
                ld  b,a              ; save
 
-IF colour
-patch_and:     and %00000111        ; keep basic colour
-               cp  7                ; white?
-               jr  nz,not_white
-               ld  b,&41            ; change to bright blue
-not_white:     cp  1                ; blue?
-               jr  nz,not_blue
-               ld  b,&07            ; change to white
-not_blue:
-ENDIF
                ld  a,&40            ; blank tile
                ld  (&420d),a        ; clear left of ghost box door
                ld  (&41ed),a        ; clear right of ghost box door
@@ -446,7 +435,7 @@ attr_fill_lp2: ld  (hl),a
 
 attr_same:     jp  page_rom
 
-attr_colour:   defb default_attr
+attr_colour:   defb screen_attr
 
 
 ; Set the power pill palette colour to the correct state by reading the 6 known
@@ -708,42 +697,7 @@ pill_clear_2:  call page_screen
 ;
 do_input:      ld  de,&ffff         ; nothing pressed
 
-               ld  a,&7f
-               in  a,(keyboard)
-               bit 1,a              ; Sym?
-               jr  nz,not_sym
-
-               ld  bc,&0501         ; 5 bits to check, first colour is blue
-
-               ld  a,&fe
-               in  a,(keyboard)
-               rra                  ; Shift?
-               jr  c,not_bright
-               set 6,c              ; use bright version
-not_bright:
-
                ld  a,&f7
-               in  a,(keyboard)
-inp_col_lp:    rra
-               jr  nc,got_colour    ; 1-5 = blue/red/magenta/green/cyan
-               inc c
-               djnz inp_col_lp
-
-               ld  a,&ef
-               in  a,(keyboard)
-               bit 4,a              ; 6 = yellow?
-               jr  z,got_colour
-               inc c
-               bit 3,a              ; 7 = white?
-               jr  z,got_colour
-               rra
-               jp  c,input_done
-
-got_colour:    ld  a,c
-               ld  (attr_colour),a  ; set to be picked up by flash_maze
-               ret
-
-not_sym:       ld  a,&f7
                in  a,(keyboard)
                cpl
                and %00000111
@@ -848,17 +802,6 @@ not_o:
                res 5,d              ; space = coin 1
                res 5,e              ; space = start 1
 not_space:
-IF colour
-               ld  a,&fe
-               in  a,(keyboard)
-               bit 3,a              ; C = colour
-               jp  z,set_colour
-
-               ld  a,&7f
-               in  a,(keyboard)
-               bit 2,a              ; M = mono
-               jp  z,set_mono
-ENDIF
 
 ; Kempston joystick
 read_joy:      in  a,(kempston)     ; read Kempston joystick
@@ -1083,9 +1026,7 @@ tile_comp:     call find_change     ; scan block for display changes
                jr  c,tile_mapped
                cp  176-63+6         ; after last ghost tile?
                jr  nc,tile_mapped
-IF colour
-patch_jr:      jr  tile_mapped
-ENDIF
+
                ex  af,af'           ; save tile
                set 2,d              ; switch to attributes
                ld  a,(de)           ; fetch tile attribute
@@ -1367,51 +1308,6 @@ spr_2_start:   ld  a,(de)
                inc hl
                djnz spr_2_lp
                pop hl
-IF colour
-patch_jp1:     ld  bc,page_rom      ; LD=mono, JP=colour
-
-               ex  af,af'
-               ld  c,a
-               ld  b,h
-
-               ld  a,h
-               rrca
-               rrca
-               rrca
-               and %00000011
-               or  &58
-               or  ixh
-               ld  h,a
-
-               ld  (hl),c
-               inc l
-               ld  (hl),c
-               ld  a,l
-               add a,32
-               ld  l,a
-               adc a,h
-               sub l
-               ld  h,a
-               ld  (hl),c
-               dec l
-               ld  (hl),c
-
-               ld  a,b
-               and %00000111
-               cp  5
-               jp  c,page_rom
-
-               ld  a,l
-               add a,32
-               ld  l,a
-               adc a,h
-               sub l
-               ld  h,a
-
-               ld  (hl),c
-               inc l
-               ld  (hl),c
-ENDIF
                jp  page_rom
 
 ; draw a sprite using 3-byte source data (shifts 5-7)
@@ -1447,57 +1343,6 @@ spr_3_start:   ld  a,(de)
                inc hl
                djnz spr_3_lp
                pop hl
-IF colour
-patch_jp2:     ld  bc,page_rom     ; LD=mono, JP=colour
-
-               ex  af,af'
-               ld  c,a
-               ld  b,h
-
-               ld  a,h
-               rrca
-               rrca
-               rrca
-               and %00000011
-               or  &58
-               or  ixh
-               ld  h,a
-
-               ld  (hl),c
-               inc l
-               ld  (hl),c
-               inc l
-               ld  (hl),c
-               ld  a,l
-               add a,32
-               ld  l,a
-               adc a,h
-               sub l
-               ld  h,a
-               ld  (hl),c
-               dec l
-               ld  (hl),c
-               dec l
-               ld  (hl),c
-
-               ld  a,b
-               and %00000111
-               cp  5
-               jp  c,page_rom
-
-               ld  a,l
-               add a,32
-               ld  l,a
-               adc a,h
-               sub l
-               ld  h,a
-
-               ld  (hl),c
-               inc l
-               ld  (hl),c
-               inc l
-               ld  (hl),c
-ENDIF
                jp  page_rom
 
 
@@ -1509,15 +1354,7 @@ map_sprite:    ld  b,0
                rl  b                ; b0=flip-y
                rra
                rl  b                ; b1=flip-y, b0=flip-x
-IF colour
-               ld  e,a              ; juggle the few spare registers
-               ld  c,d              ; it's still faster than stack use!
-               ld  d,attr_map/256
-               ld  a,(de)           ; look up default sprite attribute
-               ld  d,c
-               ld  c,a
-               ld  a,e
-ENDIF
+
                cp  16               ; big pac-man
                ret c                ; anything before is unchanged
                cp  28               ; scared ghost
@@ -1546,18 +1383,10 @@ map_big:       cp  24               ; closed mouth
                ret
 
 map_ghost:     ; D = 01=red 03=pink 05=cyan 07=orange
-IF colour
-patch_sub:     sub 0                ; offset to ghost with mouth (0=colour, 16=mono)
-ELSE
                sub 16
-ENDIF
                dec d                ; red?
                ret z
-IF colour
-patch_add:     add a,0              ; restore original ghost sprite (0=colour, 16=mono)
-ELSE
                add a,16
-ENDIF
                bit 3,d              ; transparent colour?
                jr  nz,map_eyes
                srl d
@@ -1576,16 +1405,9 @@ map_eyes:      ld  c,&47            ; bright white
                ret
 
 map_scared:
-IF colour
-patch_add2:    add a,2              ; use solid scared ghost, coloured blue (2=colour, 0=mono)
-ENDIF
                bit 1,d              ; check colour
                ret z                ; return if normal colour (transparent)
-IF colour
-patch_add3:    add a,0              ; use solid scared ghost for white (0=colour, 2=mono)
-ELSE
                add a,2
-ENDIF
                ld  c,&47            ; white
                ret
 
@@ -1750,27 +1572,7 @@ spr_save:      ld  a,h
                ld  d,a
 
                call xy_to_addr      ; convert to Speccy display address
-IF colour
-               push hl
 
-               ld  a,h
-               rra
-               rra
-               rra
-               and %00000011
-               or  &58
-               or  ixh
-               ld  h,a
-
-               ex  de,hl
-               ld  (hl),e           ; attr low
-               inc l
-               ld  (hl),d           ; attr high
-               inc l
-               ex  de,hl
-
-               pop hl
-ENDIF
                ex  de,hl
                ld  (hl),e           ; data low
                inc l
@@ -1823,45 +1625,7 @@ spr_restore:   ld  a,h
                ret z                ; no data saved
 
                ld  (hl),0           ; flag 'no restore data'
-IF colour
-               ld  e,a              ; attr low
-               inc l
-               ld  d,(hl)           ; attr high
-               inc l
 
-               ex  de,hl
-               ld  a,(attr_colour)  ; current maze colour
-               ld  bc,32-2
-
-               ld  (hl),a           ; 1st line
-               inc l
-               ld  (hl),a
-               inc l
-               ld  (hl),a
-               add hl,bc
-               ld  (hl),a           ; 2nd line
-               inc l
-               ld  (hl),a
-               inc l
-               ld  (hl),a
-               add hl,bc
-
-               ex  af,af'
-               ld  a,h
-               and %01111111
-               cp  &5b              ; beyond attributes?
-               jr  nc,restore_2     ; if so, stop painting
-               ex  af,af'
-
-               ld  (hl),a           ; 3rd line
-               inc l
-               ld  (hl),a
-               inc l
-               ld  (hl),a
-
-restore_2:     ex  de,hl
-               ld  a,(hl)
-ENDIF
                ld  e,a              ; data low
                inc l
                ld  d,(hl)           ; data high
@@ -2097,13 +1861,7 @@ chk_fruit:     ld  b,scradtab/256
                sub &91              ; subtract cherry tile number
                srl a                ; /2
                srl a                ; /4 tiles per fruit, to give fruit sprite number (cherry=0)
-IF colour
-               push hl
-               ld  l,a
-               ld  h,attr_map/256
-               ld  c,(hl)
-               pop hl
-ENDIF
+
                call page_screen
                jp  draw_spr2
 
@@ -2845,87 +2603,6 @@ find_change:   ld  a,(de)   ; 0
                pop hl               ; junk return to update
                ret
 
-IF colour
-set_mono:      ld  a,&c3            ; JP
-               ld  (patch_jp1),a
-               ld  (patch_jp2),a
-
-               ld  a,16             ; offset to ghost with mouth
-               ld  (patch_sub+1),a
-               ld  (patch_add+1),a 
-               xor a
-               ld  (patch_add2+1),a
-               ld  a,2              ; offset between blue ghosts
-               ld  (patch_add3+1),a
-
-               ld  a,&0e            ; LD C,n
-               ld  (patch_jr),a
-
-               xor a                ; dummy colour mask
-               ld  (patch_and+1),a
-
-               call page_screen
-               ld  hl,&5afd         ; current attr from first (bottom) fruit
-               ld  a,(attr_colour)  ; maze colour
-               cp  (hl)
-               jp  z,page_rom       ; nothing to do if already mono
-
-               ld  hl,&59a2         ; attr column above lives
-               call mono_strip
-               ld  hl,&59bd         ; attr column above fruits
-               call mono_strip
-               jp  page_rom
-
-set_colour:    ld  a,&01            ; LD BC,nn
-               ld  (patch_jp1),a
-               ld  (patch_jp2),a
-
-               xor a                ; no offset for Blinky
-               ld  (patch_sub+1),a
-               ld  (patch_add+1),a
-               ld  (patch_add3+1),a
-               ld  a,2              ; offset between blue ghosts
-               ld  (patch_add2+1),a
-
-               ld  a,&18            ; JR
-               ld  (patch_jr),a
-
-               ld  a,7             ; colour mask
-               ld  (patch_and+1),a
-
-               call page_screen
-               ld  hl,&5afd         ; first fruit attr
-               ld  a,(attr_colour)  ; maze colour
-               cp  (hl)
-               jp  nz,page_rom      ; nothing to do if already colour
-
-               ld  hl,bak_chars1
-               ld  de,bak_chars2
-               ld  b,&40            ; 2 lines of 32 background tiles
-               ld  a,b              ; &40 = space
-redraw_lp:     ld  (hl),a           ; write spaces over our cached values
-               ld  (de),a           ; to force a redraw of any fruits, in colour
-               inc l
-               inc e
-               djnz redraw_lp
-               jp  page_rom
-
-
-mono_strip:    ld  a,(attr_colour)  ; maze colour
-strip_alt:     ld  de,32-1          ; offset to next attr line, adjusted for width=2
-               ld  b,11
-strip_lp:      ld  (hl),a           ; paint back to mono
-               inc l
-               ld  (hl),a
-               add hl,de
-               djnz strip_lp
-               bit 7,h              ; already painting the alt screen?
-               ret nz               ; return if so
-               ld  de,&8000-(11*32) ; offset between normal and alt screens
-               add hl,de
-               jr  strip_alt
-ENDIF
-
 end_a000:      equ $
 
 new_stack:     equ &b000            ; hangs back into &Axxx
@@ -2940,14 +2617,6 @@ conv_y:        defs &100
 scradtab:      defs &200
 bak_chars1:    defs &400            ; copy of Pac-Man display for normal screen
 bak_chars2:    defs &400            ; copy of Pac-Man display for alt screen
-
-IF colour
-; Map sprite number to suitable Spectrum attribute colour
-attr_map:      defb &42,&42,&06,&46,&42,&44,&05,&45, &42,&42,&07,&07,&42,&42,&00,&00
-               defb &46,&46,&46,&46,&46,&46,&46,&46, &46,&46,&46,&46,&41,&41,&00,&00
-               defb &42,&42,&42,&42,&42,&42,&42,&42, &45,&45,&45,&45,&46,&46,&46,&46
-               defb &46,&07,&42,&42,&46,&46,&46,&46, &46,&46,&46,&46,&46,&46,&46,&46
-ENDIF
 
 end_b000:      equ $
 
