@@ -106,7 +106,7 @@ start2:        di
                ld  bc,&1ffd         ; +3 paging port
                out (c),a            ; attempt paging
                ld  a,(3)            ; peek value in Pac-Man ROM
-               cp  &ed              ; as expected?
+               and a                ; zero?
                jr  z,start3         ; if so, start up
 
                ex  af,af'
@@ -124,7 +124,13 @@ start3:        ld  sp,new_stack
                ld  bc,&2000
                ldir                 ; copy 8K of ROM to &e000 (start of page 3)
 
-               call patch_rom       ; patch the ROM while it's at the correct location
+               ld  a,&01            ; to change &5000 write to &5001, which is unused
+               ld  (&0071),a
+
+               ld  hl,(&0039)       ; original interrupt handler
+               ld  (int_chain+1),hl
+               ld  hl,do_int_hook   ; our interrupt handler hook
+               ld  (&0039),hl
 
                ld  a,%00000100      ; +3 normal paging
                ld  bc,&1ffd
@@ -335,8 +341,6 @@ set_border 0
                dec (hl)             ; reverse change from above
                ld  hl,&5064         ; sprite 2 x
                dec (hl)
-
-               call set_int_chain   ; prepare interrupt handler chain
 
                pop ix
                pop hl
