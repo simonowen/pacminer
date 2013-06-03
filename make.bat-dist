@@ -1,11 +1,11 @@
 @echo off
 setlocal
-set NAME=pacemuzx
+set NAME=pacminer
 
-if not exist pacman.6e goto missing
-if not exist pacman.6f goto missing     
-if not exist pacman.6h goto missing     
-if not exist pacman.6j goto missing     
+if not exist pacmmm.6e goto missing
+if not exist pacmmm.6f goto missing
+if not exist pacmmm.6h goto missing
+if not exist pacmmm.6j goto missing
 goto got_roms
 
 :missing
@@ -15,7 +15,10 @@ echo.
 echo The Pac-Man ROMs can't be distributed with this program, so you
 echo must provide your own copies of:
 echo.
-echo   pacman.6e pacman.6f pacman.6h pacman.6j
+echo   pacmmm.6e pacmmm.6f pacmmm.6h pacmmm.6j
+echo.
+echo They are currently available from Jim Bagley's website:
+echo   http://www.jimbagley.co.uk/PacManicMinerMan/pacmmm.zip
 echo.
 echo Copy them to this directory and re-run to generate: %NAME%.tap
 echo.
@@ -25,7 +28,7 @@ pause
 goto end
 
 :got_roms
-copy /b start.part+pacman.6e+pacman.6f+pacman.6h+pacman.6j+end.part %NAME%.tap
+copy /b start.part+pacmmm.6e+pacmmm.6f+pacmmm.6h+pacmmm.6j+end.part %NAME%.tap
 
 start %NAME%.tap
 

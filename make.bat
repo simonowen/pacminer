@@ -1,6 +1,6 @@
 @echo off
 setlocal
-set NAME=pacemuzx
+set NAME=pacminer
 
 if "%1"=="clean" goto clean
 

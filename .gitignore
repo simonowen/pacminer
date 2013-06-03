@@ -1,6 +1,7 @@
 dist/
 sprites.bin
 tiles.bin
-pacemuzx.tap
-pacemuzx.sym
-pacman.6?
+pacminer.tap
+pacminer.sym
+pacminer.o
+pacmmm.6?

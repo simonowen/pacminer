@@ -1,13 +1,15 @@
 #!/usr/bin/perl -w
 
+$NAME='pacminer';
+
 # First 4K of Pac-Man ROM
-$file = 'pacman.6e';
+$file = 'pacmmm.6e';
 open FILE, "<$file" and binmode FILE or die "$file: $!\n";
 read FILE, $rom='', -s $file;
 close FILE;
 
 # Full TAP image for emulator, including ROM
-$file = 'pacemuzx.tap';
+$file = "$NAME.tap";
 open FILE, "<$file" and binmode FILE or die "$file: $!\n";
 read FILE, $data='', -s $file;
 close FILE;

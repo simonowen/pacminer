@@ -1,49 +1,35 @@
-Pac-Man Emulator for Sinclair Spectrum (v1.3)
----------------------------------------------
+Sinclair Pac Manic Miner Man Spectrum (v0.1)
+--------------------------------------------
 
-This program requires a Spectrum +2A/+3, and will not work on earlier models.
+This is a proof-of-concept project to show Jim Bagley's Pac Manic Miner Man
+ROMs, written for the Pac-Man hardware, running back on the Spectrum +2A/+3.
 
-The Pac-Man ROMs cannot be supplied with this program, so you must supply your
-own copies of the following files (from the Midway ROM set):
+Note: this project is *INCOMPLETE*, and only contains sprites for the first
+two levels of the game.  If you'd like to convert additional sprites or tiles
+for later levels, please get in touch.
 
-  pacman.6e pacman.6f pacman.6h pacman.6j
+The ROMs are not supplied with this program, but are currently available from:
+
+  http://www.jimbagley.co.uk/PacManicMinerMan/pacmmm.zip
+
+You'll need the following files from the archive:
+
+  pacmmm.6e pacmmm.6f pacmmm.6h pacmmm.6j
 
 Copy them to the same directory as this file, then run make.bat (Windows).
-Under Mac/Linux/Un*x, use make to build the final pacemuzx.tap image file,
+Under Mac/Linux/Un*x, use make to build the final pacminer.tap image file,
 or combine manually using:
 
-  cat start.part pacman.6[efhj] end.part > pacemuzx.tap
-
-Many thanks to #zx and WOS for feedback and testing :)
+  cat start.part pacmmm.6[efhj] end.part > pacminer.tap
 
 Enjoy!
 
 ---
 
-Version 1.3 (2012/01/08)
-- Added run-time colour/mono sprite selection
-- Added boot-time selection of Hard difficulty
-- Restored traditional blue/white maze flash when using blue/white colours
-- Restored sprite trimming at maze edges in colour version
-- Added loading message to show version number
-
-Version 1.2 (2011/12/06)
-- Added colour sprites
-- Added Spectranet support, to prompt for trap disable
-- Added key combos to change maze colour
-- Maze flash now toggles current bright instead of blue
-- Various minor fixes and speed-ups
-
-Version 1.1 (2011/11/09)
-- Added DivIDE support, using pages 3+0 for ROM if present
-- Improved control handling, favouring newest direction pressed
-- Holding a key after loading delays the emulation starting until released
-- Moved Blinky's downward-facing mouth down a pixel
-
-Version 1.0 (2011/11/08)
+Version 0.1 (2013/06/04)
 - Initial release
 
 ---
 
 Simon Owen
-http://simonowen.com/spectrum/pacemuzx/
+http://simonowen.com/

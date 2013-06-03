@@ -2628,7 +2628,7 @@ msg_lp:        ld  a,(hl)
                jr  msg_lp
 
 
-loading_msg:   defm "pacemuzx v1.3"
+loading_msg:   defm "pacminer v0.1"
                defb 0
 
 specnet_msg:   defm "Disable Spectranet traps now..."
@@ -2956,10 +2956,10 @@ load_sprites:  incbin "sprites.bin"    ; 76 sprites * 12 lines * 2 byte per line
 
                org &c000
 ; 16K of Pac-Man ROMs
-               incbin "pacman.6e"
-               incbin "pacman.6f"
-               incbin "pacman.6h"
-               incbin "pacman.6j"
+               incbin "pacmmm.6e"
+               incbin "pacmmm.6f"
+               incbin "pacmmm.6h"
+               incbin "pacmmm.6j"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

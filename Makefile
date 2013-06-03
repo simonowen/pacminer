@@ -1,5 +1,5 @@
-NAME=pacemuzx
-ROMS=pacman.6e pacman.6f pacman.6h pacman.6j
+NAME=pacminer
+ROMS=pacmmm.6e pacmmm.6f pacmmm.6h pacmmm.6j
 UNAME := $(shell uname -s)
 
 .PHONY: dist clean
