@@ -4,9 +4,8 @@ Sinclair Pac Manic Miner Man Spectrum (v0.1)
 This is a proof-of-concept project to show Jim Bagley's Pac Manic Miner Man
 ROMs, written for the Pac-Man hardware, running back on the Spectrum +2A/+3.
 
-Note: this project is *INCOMPLETE*, and only contains sprites for the first
-two levels of the game.  If you'd like to convert additional sprites or tiles
-for later levels, please get in touch.
+Note: this project is *INCOMPLETE*, and only contains sprites and tiles for
+the first 6-7 levels of the game.
 
 The ROMs are not supplied with this program, but are currently available from:
 
@@ -32,4 +31,4 @@ Version 0.1 (2013/06/04)
 ---
 
 Simon Owen
-http://simonowen.com/
+http://simonowen.com/spectrum/pacemuzx
