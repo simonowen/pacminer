@@ -533,30 +533,13 @@ fulldraw_norm: ld  b,28
                ld  de,pac_chars
                ld  hl,bak_chars1-pac_footer
                add hl,de
-               call tile_comp
-               ld  hl,bak_chars1
-               call do_fruit
-               ld  hl,bak_chars1
-               call do_lives
-               ld  hl,bak_chars1
-               call do_score1
-               ld  hl,bak_chars1
-               jp  do_score2
+               jp  tile_comp
 
 fulldraw_alt:  ld  b,28
                ld  de,pac_chars
                ld  hl,bak_chars2-pac_footer
                add hl,de
-               call tile_comp
-               ld  hl,bak_chars2
-               call do_fruit
-               ld  hl,bak_chars2
-               call do_lives
-               ld  hl,bak_chars2
-               call do_score1
-               ld  hl,bak_chars2
-               jp  do_score2
-
+               jp  tile_comp
 
 tile_strips:   jp  nz,strip_odd
 strip_even:    jp  strip_0
@@ -593,18 +576,6 @@ strip_3:       ld  b,7
                ld  hl,bak_chars1-pac_footer
                add hl,de
                call tile_comp
-               ld  hl,strip_4
-               ld  (strip_even+1),hl
-               ret
-
-strip_4:       ld  hl,bak_chars1
-               call do_score1
-               ld  hl,bak_chars1
-               call do_score2
-               ld  hl,bak_chars1
-               call do_fruit
-               ld  hl,bak_chars1
-               call do_lives
                ld  hl,strip_0
                ld  (strip_even+1),hl
                ret
@@ -643,18 +614,6 @@ strip_3_alt:   ld  b,7
                ld  hl,bak_chars2-pac_footer
                add hl,de
                call tile_comp
-               ld  hl,strip_4_alt
-               ld  (strip_odd+1),hl
-               ret
-
-strip_4_alt:   ld  hl,bak_chars2
-               call do_score1
-               ld  hl,bak_chars2
-               call do_score2
-               ld  hl,bak_chars2
-               call do_fruit
-               ld  hl,bak_chars2
-               call do_lives
                ld  hl,strip_0_alt
                ld  (strip_odd+1),hl
                ret
@@ -1028,23 +987,6 @@ map_sprite:    ld  b,0
                sub 48-4             ; kangaroo and pac-man mirrors are adjacent
                ret
 
-; Clear a sprite-sized hole, used for blank tiles in our fruit and lives display
-;
-blank_sprite:  call page_screen
-
-               ld  bc,&0c00         ; 12 lines, zero fill
-blank_lp:      ld  (hl),c
-               inc l
-               ld  (hl),c
-               dec l
-               inc h
-               ld  a,h
-               and %00000111
-               call z,blockdown_hl
-               djnz blank_lp
-
-               jp  page_rom
-
 
 ; Save the background screen behind locations we're about to draw active sprites
 ;
@@ -1206,263 +1148,6 @@ do_sprites:
                call draw_spr        ; red ghost
 
                ret
-
-
-do_score1:     inc h
-               inc h
-               inc h                ; advance to header area containing score
-
-               ld  ixl,0            ; screen offset for left edge
-
-               ld  l,&da
-               ld  bc,&0003
-               call chk_digit       ; 1
-
-               ld  l,&d9
-               ld  bc,&0004
-               call chk_digit       ; U
-
-               ld  l,&d8
-               ld  bc,&0005
-               call chk_digit       ; P
-
-
-               ld  l,&fc
-               ld  bc,&0100
-               call chk_digit       ; 100,000s
-
-               ld  l,&fb
-               ld  bc,&0101
-               call chk_digit       ; 10,000s
-
-               ld  l,&fa
-               ld  bc,&0102
-               call chk_digit       ; 1,000s
-
-               ld  l,&f9
-               ld  bc,&0103
-               call chk_digit       ; 100s
-
-               ld  l,&f8
-               ld  bc,&0104
-               call chk_digit       ; 10s
-
-               ld  l,&f7
-               ld  bc,&0105
-               call chk_digit       ; 1s
-
-               ret
-
-;
-do_score2:     inc h
-               inc h
-               inc h                ; advance to header area containing score
-
-               ld  ixl,26           ; screen offset for left edge
-
-               ld  l,&c7
-               ld  bc,&0003
-               call chk_digit       ; 2
-
-               ld  l,&c6
-               ld  bc,&0004
-               call chk_digit       ; U
-
-               ld  l,&c5
-               ld  bc,&0005
-               call chk_digit       ; P
-
-
-               ld  l,&e9
-               ld  bc,&0100
-               call chk_digit       ; 100,000s
-
-               ld  l,&e8
-               ld  bc,&0101
-               call chk_digit       ; 10,000s
-
-               ld  l,&e7
-               ld  bc,&0102
-               call chk_digit       ; 1,000s
-
-               ld  l,&e6
-               ld  bc,&0103
-               call chk_digit       ; 100s
-
-               ld  l,&e5
-               ld  bc,&0104
-               call chk_digit       ; 10s
-
-               ld  l,&e4
-               ld  bc,&0105
-               call chk_digit       ; 1s
-
-               ret
-
-chk_digit:     ld  d,&43
-               ld  e,l
-               ld  a,(de)
-               cp  (hl)
-               ret z
-               ld  (hl),a
-
-               ex  af,af'
-               push hl
-               call draw_tile_x
-               pop hl
-               ret
-
-
-; Draw changes to the fruit display, which is remapped to a vertical layout
-; We use the sprite versions of the tiles, for easier drawing
-;
-do_fruit:      ld  l,5              ; offset to first fruit in display and comparison buffer
-               ld  c,&b4
-               push hl
-               call chk_fruit
-               pop hl
-
-               ld  l,7
-               ld  c,&a8
-               push hl
-               call chk_fruit
-               pop hl
-
-               ld  l,9
-               ld  c,&9c
-               push hl
-               call chk_fruit
-               pop hl
-
-               ld  l,11
-               ld  c,&90
-               push hl
-               call chk_fruit
-               pop hl
-
-               ld  l,13
-               ld  c,&84
-               push hl
-               call chk_fruit
-               pop hl
-
-               ld  l,15
-               ld  c,&78
-               push hl
-               call chk_fruit
-               pop hl
-
-               ld  l,17
-               ld  c,&6c
-               push hl
-               call chk_fruit
-               pop hl
-
-               ret
-
-chk_fruit:     ld  b,scradtab/256
-               ld  a,(bc)
-               add a,&1d            ; Speccy line offset for fruit column
-               ld  e,a
-               inc b
-               ld  a,(bc)
-               or  ixh
-               ld  d,a
-
-               ld  b,pac_footer/256 ; tile MSB for fruit
-               ld  c,l
-               ld  a,(bc)           ; live fruit
-               cp  (hl)             ; has it changed?
-               ret z                ; return if not
-
-               ld  (hl),a           ; update buffered copy
-               ex  de,hl
-               ex  af,af'
-
-               push hl
-               call blank_sprite
-               pop hl
-
-               xor a                ; no rotation, for sprite drawing later
-               ex  af,af'
-               cp  &40              ; blank?
-               ret z
-
-               sub &91              ; subtract cherry tile number
-               srl a                ; /2
-               srl a                ; /4 tiles per fruit, to give fruit sprite number (cherry=0)
-
-               call page_screen
-               jp  draw_spr2
-
-;
-; Draw changes to the number of remaining lives
-;
-do_lives:      ld  l,&1b
-               ld  c,&b4
-               push hl
-               call chk_life
-               pop hl
-
-               ld  l,&19
-               ld  c,&a8
-               push hl
-               call chk_life
-               pop hl
-
-               ld  l,&17
-               ld  c,&9c
-               push hl
-               call chk_life
-               pop hl
-
-               ld  l,&15
-               ld  c,&90
-               push hl
-               call chk_life
-               pop hl
-
-               ld  l,&13
-               ld  c,&84
-               push hl
-               call chk_life
-               pop hl
-
-               ret
-
-; Draw either a blank or a left-facing Pac-Man sprite
-chk_life:      ld  b,scradtab/256
-               ld  a,(bc)
-               add a,&02             ; Speccy line offset for lives column
-               ld  e,a
-               inc b
-               ld  a,(bc)
-               or  ixh
-               ld  d,a
-
-               ld  b,&40
-               ld  c,l
-               ld  a,(bc)
-               cp  (hl)
-               ret z
-
-               ld  (hl),a
-               ex  de,hl
-               ex  af,af'
-
-               push hl
-               call blank_sprite
-               pop hl
-
-               xor a                ; no rotation, for sprite drawing later
-               ex  af,af'
-               cp  &40              ; blank?
-               ret z
-
-               call page_screen
-               ld  a,72             ; sprite for left-facing Pac-Man
-               ld  c,&46            ; yellow attribute
-               jp  draw_spr2
 
 
 ; Build the sound table and initialise the AY-3-8912 chip
