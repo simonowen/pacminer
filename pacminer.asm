@@ -125,6 +125,8 @@ start3:        ld  sp,new_stack
 
                ld  a,&01            ; to change &5000 write to &5001, which is unused
                ld  (&0071),a
+               xor a                ; patch OUT (0),A to be NOP;NOP
+               ld  (&0109),a
 
                ld  hl,(&0039)       ; original interrupt handler
                ld  (int_chain+1),hl
