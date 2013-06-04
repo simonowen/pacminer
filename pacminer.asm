@@ -499,9 +499,29 @@ vis_lp:        cp  (hl)
                djnz vis_lp
                ret
 
+last_tile:     defb 0
 
 ; Draw the background tile changes, in 1-5 steps over the 2 double-buffered screens
-do_tiles:      call is_visible      ; set carry state for below
+; We can't see attribute changes, as used for the title logo and level backgrounds.
+; To ensure they're updated we force a redraw when changing between menu and game.
+do_tiles:      ld  hl,last_tile
+               ld  a,(pac_chars+(27*32)+20) ; 'A' in Air on game screen
+               cp  (hl)             ; has it changed?
+               jr  z,no_refresh     ; don't refresh full display
+               ld  (hl),a           ; update new value
+
+               ld  hl,bak_chars1    ; copy of display tiles
+               ld  bc,&0800         ; clear both screen copies
+               ld  a,&a0            ; space
+refresh_lp:    cp  (hl)             ; tile is currently a space?
+               jr  nz,non_space
+               ld  (hl),c           ; write zero to force redraw
+non_space:     inc l
+               jr  nz,refresh_lp
+               inc h
+               djnz refresh_lp
+no_refresh:
+               call is_visible      ; set carry state for below
 
 tile_state:    ld  a,ixh
                bit 7,a              ; alt screen? (don't disturb carry!)
@@ -646,26 +666,43 @@ tile_comp:     call find_change     ; scan block for display changes
 
                ld  (hl),a           ; update with new tile value
 
-               cp  144              ; before fruit tiles?
-               jr  c,tile_mapped
-               sub 63               ; relocate to account for removed fruits
-               cp  176-63           ; first ghost tile
-               jr  c,tile_mapped
-               cp  176-63+6         ; after last ghost tile?
-               jr  nc,tile_mapped
+               ex  de,hl
+               set 2,h              ; switch to attributes
+               ld  c,(hl)           ; fetch tile attribute
+               cp  9
+               res 2,h              ; switch back to data
+               ex  de,hl
 
-               ex  af,af'           ; save tile
-               set 2,d              ; switch to attributes
-               ld  a,(de)           ; fetch tile attribute
-               res 2,d              ; switch back to data
-               ld  c,a
-               ex  af,af'           ; restore tile
-               dec c                ; red ghost?
-               jr  nz,tile_mapped
-               add a,6              ; offset to Blinky tiles
-tile_mapped:
-               ex  af,af'           ; save tile for later
-               push de
+               cp  160
+               jr  nz,not_blank
+
+               ld  a,c
+               cp  9
+               jr  nz,tile_empty
+               ld  a,27             ; white block
+               jr  tile_mapped
+not_blank:
+               exx
+               ld  l,a
+               ld  h,tile_map/256
+               ld  a,(hl)
+               exx
+               and a
+               jr  nz,tile_known
+tile_empty:    ld  a,64             ; space
+tile_known:    cp  65               ; 'A'?
+               jr  c,tile_mapped    ; jump if below
+               cp  65+26            ; 'Z'+1?
+               jr  nc,tile_mapped   ; jump if not letter
+               ex  af,af'           ; keep tile safe
+               ld  a,c              ; current attribute
+               cp  9                ; inverse-style attribute?
+               jr  nz,tile_mappedex
+               ex  af,af'           ; restore letter tile
+               add a,32             ; switch to inverse character set
+
+tile_mapped:   ex  af,af'           ; save tile for later
+tile_mappedex: push de
                exx                  ; save to resume find
                pop hl               ; Pac-Man screen address of changed tile
 
@@ -982,62 +1019,14 @@ map_sprite:    ld  b,0
                rra
                rl  b                ; b1=flip-y, b0=flip-x
 
-               cp  16               ; big pac-man
-               ret c                ; anything before is unchanged
-               cp  28               ; scared ghost
-               jr  c,map_big
-               cp  32               ; first ghost
-               jr  c,map_scared
-               cp  40               ; last ghost + 1
-               jr  c,map_ghost
-               cp  44               ; first Pac-Man
-               ret c
-               cp  48               ; last Pac-Man + 1
-               ret nc
-               inc b
-               dec b                ; mirrored?
-               ret z                ; no, so right/down
-               add a,28             ; offset to left/up
-               ret
+               bit 0,b              ; x-mirrored?
+               ret z                ; return if not
+               add a,48             ; switch to mirrored sprites
 
-map_big:       cp  24               ; closed mouth
-               ret nc
-               add a,48
-               bit 0,a              ; mouth segment?
-               ret nz
-               and %00000010        ; up/down back
-               or  %00011000        ; re-use back segments
+               cp  96               ; off the end?
+               ret c                ; return if in range
+               sub 48-4             ; kangaroo and pac-man mirrors are adjacent
                ret
-
-map_ghost:     ; D = 01=red 03=pink 05=cyan 07=orange
-               sub 16
-               dec d                ; red?
-               ret z
-               add a,16
-               bit 3,d              ; transparent colour?
-               jr  nz,map_eyes
-               srl d
-               dec d                ; pink?
-               ld  c,&43            ; red
-               ret z
-               dec d                ; cyan?
-               ld  c,&45
-               ret z
-               ld  c,&44            ; green (should be orange)
-               ret
-
-map_eyes:      ld  c,&47            ; bright white
-               add a,32             ; eyes offset
-               and %11111110        ; use only even positions
-               ret
-
-map_scared:
-               bit 1,d              ; check colour
-               ret z                ; return if normal colour (transparent)
-               add a,2
-               ld  c,&47            ; white
-               ret
-
 
 ; Clear a sprite-sized hole, used for blank tiles in our fruit and lives display
 ;
@@ -2143,6 +2132,19 @@ find_change:   ld  a,(de)   ; 0
 
                pop hl               ; junk return to update
                ret
+
+
+               defs (-$)%256          ; align to next 256-byte boundary
+
+               ; Map native tiles to our limited tile set (tiles.png)
+tile_map:      defb 0,2,3,28,47,48,49,50, 19,19,52,136,136,51,136,136, 136,136,136,136,46,45,44,43, 41,41,41,42,41,42,22,39
+               defb 18,0,18,18,18,18,18,0, 0,0,0,0,0,0,0,0, 33,33,33,33,33,33,36,33, 34,34,35,37,35,35,38,40
+               defb 30,31,62,63,32,32,20,21, 168,169,170,171,172,173,174,175, 168,169,170,171,172,173,174,175, 168,169,170,171,172,173,174,175
+               defb 10,11,12,13,14,15,16,17, 136,137,138,139,140,141,142,143, 128,129,130,131,132,133,134,135, 128,129,130,131,132,133,134,135
+               defb 136,137,138,139,140,141,142,143, 136,137,138,139,140,141,142,143, 160,161,162,163,164,165,166,167, 136,137,138,139,140,141,142,143
+               defb 64,0,0,0,0,0,0,0, 0,0,0,0,0,0,0,0, 79,1,2,3,4,5,6,7, 8,9,0,0,0,0,0,0
+               defb 0,65,66,67,68,69,70,71, 72,73,74,75,76,77,78,79, 80,81,82,83,84,85,86,87, 88,89,90,29,0,0,30,31
+               defb 0,65,66,67,68,69,70,71, 72,73,74,75,76,77,78,79, 80,81,82,83,84,85,86,87, 88,89,90,61,0,0,62,63
 
 end_a000:      equ $
 
